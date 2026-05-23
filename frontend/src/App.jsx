@@ -88,6 +88,19 @@ export default function App() {
 
   const handleExitCommunity = useCallback(() => {
     const id = activeCommunityId
+    // Optimistic local session update: <VillageGame> remounts on the next
+    // render and initialises the player tile from `session.spawn.last_community_id`
+    // via useState. If we leave the in-memory session pointing at whatever the
+    // previous loadTown returned, the player visually lands on the *previous*
+    // visited community's doormat. Updating session here, before setScene,
+    // ensures the just-exited community is the spawn. saveGameSession + loadTown
+    // still run for server-side persistence and other state.
+    setSession((prev) => ({
+      ...(prev || {}),
+      last_area: 'town',
+      last_community_id: id,
+      spawn: { area: 'town', last_community_id: id },
+    }))
     saveGameSession({ last_area: 'town', last_community_id: id }).catch(() => {})
     setScene('town')
     setCommunityDetail(null)
